@@ -41,3 +41,25 @@
     dest: /var/service
     src: /etc/service
     state: link
+
+- name: Ensure runsvdir is really running (avoid msg unable to open supervise/ok)
+  become: true
+  shell: ps -ef |  grep runsvdir | grep -v grep
+  register: process_runsvdir
+  changed_when: false
+  ignore_errors: true
+
+
+- block: 
+  - name: Kill all unsupervised runsv processes
+    become: true
+    shell: killall runsv
+    changed_when: false
+    ignore_errors: true
+
+  - name: Start "runsvdir" if needed
+    become: true
+    shell: "cd /tmp; nohup runsvdir -P -H /etc/service log: ........................................................................................................................................................................................................................................................................................................................................................................................................... </dev/null >/dev/null 2>&1 &"
+    async: 2592000  # 60*60*24*30 – 1 month
+    poll: 0
+  when: "process_runsvdir.stdout.find('runsvdir') == -1"
